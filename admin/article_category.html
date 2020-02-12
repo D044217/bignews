@@ -55,5 +55,41 @@
             </table>
         </div>
     </div>
+    <script type='text/html' id='template1'>
+{{each data v}}
+<tr>
+    <td>{{v.name}}</td>
+    <td>{{v.slug}}</td>
+    <td class="text-center">
+        <a href="javascript:void(0)" data-id='{{v.id}}' data-toggle="modal" class=" btn btn-info btn-xs">编辑</a>
+        <a href="javascript:void(0)" data-id='{{v.id}}' class="btn btn-danger btn-xs">删除</a>
+    </td>
+</tr>
+{{/each}}
+
+    </script>
+    <script>
+        $(function () {
+            //1.查询所有文章内容 渲染页面
+            $.ajax({
+                type: 'get',
+                url: window.BigNew.category_list,
+                success: function (backData) {
+                    console.log(backData);
+                    if (backData.code == 200) {
+                        $('.category_table>tbody').html(template('template1', backData))
+                    }
+
+
+                }
+
+            })
+            //2.增加文章
+            //3.编辑文章
+            //4.删除文章
+
+        })
+
+    </script>
 
 </html>
