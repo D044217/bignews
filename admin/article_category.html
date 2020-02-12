@@ -55,38 +55,162 @@
             </table>
         </div>
     </div>
-    <script type='text/html' id='template1'>
-{{each data v}}
-<tr>
-    <td>{{v.name}}</td>
-    <td>{{v.slug}}</td>
-    <td class="text-center">
-        <a href="javascript:void(0)" data-id='{{v.id}}' data-toggle="modal" class=" btn btn-info btn-xs">编辑</a>
-        <a href="javascript:void(0)" data-id='{{v.id}}' class="btn btn-danger btn-xs">删除</a>
-    </td>
-</tr>
-{{/each}}
+    <!-- bootstrap的模态框 -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
 
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
+                            aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="exampleModalLabel">新增类别</h4>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <!-- 隐藏域,保存当前这一条文章类别的id -->
+                        <input type="hidden" name="id" id="category_id">
+                        <div class="form-group">
+                            <label for="recipient-name" class="control-label">文章分类名称:</label>
+                            <input type="text" name="name" class="form-control" id="recipient-name">
+                        </div>
+                        <div class="form-group">
+                            <label for="message-text" class="control-label">文章分类别名:</label>
+                            <input class="form-control" name="slug" id="message-text"></input>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default btn-cancel" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary btn-queren">确认</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- 模板字符串 -->
+    <script type='text/html' id='template1'>
+    {{each data v}}
+        <tr>
+        <td>{{v.name}}</td>
+        <td>{{v.slug}}</td>
+        <td class="text-center">
+            <a href="javascript:void(0)" data-id='{{v.id}}' data-toggle="modal" class=" btn btn-info btn-xs" data-toggle="modal" data-target="#myModal">编辑</a>
+            <a href="javascript:void(0)" data-id='{{v.id}}' class="btn btn-danger btn-xs" data-toggle="modal" data-target="#myModal">删除</a>
+        </td>
+        </tr>
+    {{/each}}
     </script>
+
     <script>
         $(function () {
             //1.查询所有文章内容 渲染页面
-            $.ajax({
-                type: 'get',
-                url: window.BigNew.category_list,
-                success: function (backData) {
-                    console.log(backData);
-                    if (backData.code == 200) {
-                        $('.category_table>tbody').html(template('template1', backData))
+            getAjax();
+            function getAjax() {
+                $.ajax({
+                    type: 'get',
+                    url: window.BigNew.category_list,
+                    success: function (backData) {
+                        // console.log(backData);
+                        if (backData.code == 200) {
+                            $('.category_table>tbody').html(template('template1', backData))
+                        }
                     }
+                })
+            }
+            //2.增加文章/ 编辑文章(模态框)
+            $('#myModal').on('show.bs.modal', function (e) {
+                console.log(e.relatedTarget);
 
-
+                //就可以通过e.relatedTarget知道你是新增分类,还是编辑按钮弹出来的模态框
+                //2.1增加文章
+                if (e.relatedTarget === $('#xinzengfenlei')[0]) {
+                    $('#exampleModalLabel').text('增加类别')
+                    //为增加分类添加类名
+                    $("#myModal .btn-queren")
+                        .text("新增")
+                        .addClass("btn-primary")
+                        .removeClass("btn-success");
+                    //重置表单默认值
+                    $('#myModal form')[0].reset();
+                } else {
+                    $('#exampleModalLabel').text('编辑类别');
+                    //为编辑按钮修改类名
+                    $("#myModal .btn-queren")
+                        .text("编辑")
+                        .addClass("btn-success")
+                        .removeClass("btn-primary");
+                    //编辑文章分类名称的默认值
+                    var recipientName = $(e.relatedTarget).parent().prev().prev().text();
+                    $('#recipient-name').val(recipientName);
+                    //编辑文章分类别名的默认值
+                    var messageText = $(e.relatedTarget).parent().prev().text();
+                    $('#message-text').val(messageText);
+                    //将id保存到隐藏域中
+                    $("#category_id").val($(e.relatedTarget).attr("data-id"));
                 }
 
             })
-            //2.增加文章
-            //3.编辑文章
-            //4.删除文章
+            //3.点击取消按钮重置表单默认值
+            $('#myModal btn-cancel').on('click', function () {
+                $("#myModal form")[0].reset();
+            })
+            //4.模态框新增/编辑按钮点击事件
+            $('#myModal .btn-queren').on('click', function () {
+                if ($(this).hasClass('btn-primary')) {
+                    //新增按钮
+                    var cateName = $('#recipient-name').val().trim();
+                    var cateSlug = $('#message-text').val().trim();
+                    $.ajax({
+                        type: 'post',
+                        url: window.BigNew.category_add,
+                        data: {
+                            name: cateName,
+                            slug: cateSlug
+                        },
+                        success: function (backData) {
+                            console.log(backData);
+                            if (backData.code == 201) {
+                                alert(backData.msg);
+                                //隐藏模态框
+                                $("#myModal").modal("hide");
+                                //刷新页面
+                                // window.location.reload();
+                                getAjax();
+                            }
+
+                        }
+                    })
+                } else {
+                    //编辑按钮
+                    var editName = $('#recipient-name').val().trim();
+                    var editSlug = $('#message-text').val().trim();
+                    var editId = $("#category_id").val().trim();
+                    $.ajax({
+                        type: 'post',
+                        url: window.BigNew.category_edit,
+                        data: {
+                            id: editId,
+                            name: editName,
+                            slug: editSlug
+                        },
+                        success: function (backData) {
+                            console.log(backData);
+                            if (backData.code == 200) {
+                                alert(backData.msg);
+                                //隐藏模态框
+                                $("#myModal").modal("hide");
+                                //刷新页面
+                                // window.location.reload();
+                                getAjax();
+                            }
+                        }
+                    })
+                }
+            })
+
+
+            //3.删除文章
 
         })
 
