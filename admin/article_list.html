@@ -168,7 +168,8 @@
 
             //     }
             // })
-
+            //保存页码数
+            var mypage = 1;
             //封装文章列表发送ajax请求函数
             function getAjax(mypage, callback) {
                 $.ajax({
@@ -183,15 +184,26 @@
                     success: function (backData) {
                         // console.log(backData);
                         if (backData.code == 200) {
+
+
                             $('tbody').html(template('template_list', backData));
                             // 额外做的事情
                             //1.发送ajax请求成功后做分页结构
                             //2.点击分页页码,发送ajax请求成功后不做其他事情
                             //3.点击筛选按钮,发送ajax请求,成功后根据动态的总页数重新渲染分页
-                            if (callback != null) {
+                            if (backData.data.data.length != 0 && callback != null) {
 
                                 callback(backData);
-                            }
+                                $('#pagination-demo').prev().hide();
+                            } else if (backData.data.totalPage == mypage - 1 && backData.data.data.length == 0) {
+                                //删完最后一页所有数据后,跳转到前面一页
+                                mypage -= 1;
+                                //调用changeTotalPages 这个方法 根据新的总页数 重新生成分页结构. 
+                                $('#pagination-demo').twbsPagination('changeTotalPages',
+                                    backData.data.totalPage, mypage);
+                            }  else if (backData.data.data.length == 0) {//没有数据
+                                $('#pagination-demo').prev().show();
+                            } 
                         }
                     }
                 })
@@ -209,7 +221,7 @@
                     onPageClick: function (event, page) {
                         // $('#page-content').text('Page ' + page);
                         mypage = page; //把当前点击的这一个页码给mypage赋值. 
-                        getAjax(page, null);
+                        getAjax(mypage, null);
                     }
                 })
             })
@@ -221,14 +233,37 @@
                 getAjax(1, function (backData) {
                     //改变了筛选条件,那总页数就有可能发生了改变
                     //调用changeTotalPages 这个方法 根据新的总页数 重新生成分页结构. 
+
                     $('#pagination-demo').twbsPagination('changeTotalPages',
                         backData.data.totalPage, 1);
                 });
             })
-            
+            //删除按钮点击事件(委托注册)根据id进行删除
+            $('tbody').on('click', '.delete', function () {
+                var deleteId = $(this).attr('data-id')
+                if (confirm('确定要删除吗?')) {
+                    $.ajax({
+                        type: 'post',
+                        url: BigNew.article_delete,
+                        data: {
+                            id: deleteId
+                        },
+                        success: function (backData) {
+                            if (backData.code == 204) {
+                                //重新渲染页面
+                                getAjax(mypage, function (backData) {
+                                    //删除了部分数据,那总页数就有可能发生了改变
+                                    //调用changeTotalPages 这个方法 根据新的总页数 重新生成分页结构. 
+                                    $('#pagination-demo').twbsPagination('changeTotalPages',
+                                        backData.data.totalPage, mypage);
+                                });
+                            }
+                        }
+                    })
+                }
+            })
         })
-        //删除按钮点击事件(委托注册)根据id进行删除
-        
+
 
     </script>
 </body>
