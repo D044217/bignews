@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="./css/iconfont.css">
     <link rel="stylesheet" href="./css/main.css">
     <script src="./libs/jquery-1.12.4.min.js"></script>
+    <!-- 引入分页插件需要的文件 -->
+    <script src="./libs/bootstrap/js/bootstrap.min.js"></script>
+    <script src="./libs/jquery.twbsPagination.js"></script>
     <!-- 引入模板引擎js文件 -->
     <script src="./libs/template-web.js"></script>
     <!-- 导入ajax全局配置文件 -->
@@ -76,7 +79,7 @@
                 <!-- 分页插件的结构 -->
                 <p>没有数据</p>
                 <ul id="pagination-demo" class="pagination-sm"></ul>
-                
+
             </div>
         </div>
     </div>
@@ -84,7 +87,7 @@
     <script id="template_select" type="text/html">
              <option value="">所有分类</option>
             {{each data v}}
-            <option>{{v.name}}</option>
+            <option value='{{v.id}}'>{{v.name}}</option>
             {{/each}}
     </script>
     <!-- 文章列表的模板字符串 -->
@@ -119,25 +122,114 @@
                 }
             })
             //1.2渲染文章列表
-            $.ajax({
-                type: 'get',
-                url: window.BigNew.article_query,
-                data: {
-                    type: $('#selCategory').val().trim(),
-                    state: $('#selStatus').val().trim(),
-                    page: 1,
-                    perpage: 6
-                },
-                success: function (backData) {
-                    // console.log(backData);
-                    if (backData.code == 200) {
-                        $('tbody').html(template('template_list', backData));
-                    }
+            // $.ajax({
+            //     type: 'get',
+            //     url: window.BigNew.article_query,
+            //     data: {
+            //         type: $('#selCategory').val().trim(),
+            //         state: $('#selStatus').val().trim(),
+            //         page: 1,
+            //         perpage: 6
+            //     },
+            //     success: function (backData) {
+            //         console.log(backData);
+            //         if (backData.code == 200) {
+            //             $('tbody').html(template('template_list', backData));
+            //             //3.分页插件
+            //             $('#pagination-demo').twbsPagination({
+            //                 totalPages: backData.data.totalPage,
+            //                 visiblePages: 7,
+            //                 first: '首页',
+            //                 prev: '上一页',
+            //                 next: '下一页',
+            //                 last: '尾页',
+            //                 onPageClick: function (event, page) {
+            //                     // $('#page-content').text('Page ' + page);
+            //                     $.ajax({
+            //                         type: 'get',
+            //                         url: window.BigNew.article_query,
+            //                         data: {
+            //                             type: $('#selCategory').val().trim(),
+            //                             state: $('#selStatus').val().trim(),
+            //                             page: page,
+            //                             perpage: 6
+            //                         },
+            //                         success: function (backData) {
+            //                             // console.log(backData);
+            //                             if (backData.code == 200) {
+            //                                 $('tbody').html(template('template_list', backData));
+            //                             }
 
-                }
+            //                         }
+            //                     })
+            //                 }
+            //             })
+            //         }
+
+            //     }
+            // })
+
+            //封装文章列表发送ajax请求函数
+            function getAjax(mypage, callback) {
+                $.ajax({
+                    type: 'get',
+                    url: window.BigNew.article_query,
+                    data: {
+                        type: $('#selCategory').val().trim(),
+                        state: $('#selStatus').val().trim(),
+                        page: mypage,
+                        perpage: 6
+                    },
+                    success: function (backData) {
+                        // console.log(backData);
+                        if (backData.code == 200) {
+                            $('tbody').html(template('template_list', backData));
+                            // 额外做的事情
+                            //1.发送ajax请求成功后做分页结构
+                            //2.点击分页页码,发送ajax请求成功后不做其他事情
+                            //3.点击筛选按钮,发送ajax请求,成功后根据动态的总页数重新渲染分页
+                            if (callback != null) {
+
+                                callback(backData);
+                            }
+                        }
+                    }
+                })
+            }
+            // 一进到页面就要获取默认条件下的文章们并显示. 
+            getAjax(1, function (backData) {
+                // 分页插件
+                $('#pagination-demo').twbsPagination({
+                    totalPages: backData.data.totalPage,
+                    visiblePages: 7,
+                    first: '首页',
+                    prev: '上一页',
+                    next: '下一页',
+                    last: '尾页',
+                    onPageClick: function (event, page) {
+                        // $('#page-content').text('Page ' + page);
+                        mypage = page; //把当前点击的这一个页码给mypage赋值. 
+                        getAjax(page, null);
+                    }
+                })
             })
-            //
+
+            //2.筛选按钮点击事件
+            $('#btnSearch').on('click', function (e) {
+                e.preventDefault();
+                //发送ajax请求.
+                getAjax(1, function (backData) {
+                    //改变了筛选条件,那总页数就有可能发生了改变
+                    //调用changeTotalPages 这个方法 根据新的总页数 重新生成分页结构. 
+                    $('#pagination-demo').twbsPagination('changeTotalPages',
+                        backData.data.totalPage, 1);
+                });
+            })
+            
         })
+        //删除按钮点击事件(委托注册)根据id进行删除
+        
+
     </script>
 </body>
 
