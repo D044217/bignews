@@ -100,7 +100,9 @@
             <td class="text-center">{{v.date}}</td>
             <td class="text-center">{{v.state}}</td>
             <td class="text-center">
-                <a href="article_edit.html" data-id="{{v.id}}" class="btn btn-default btn-xs">编辑</a>
+                <a href="article_edit.html?id={{v.id}}" class="btn btn-default btn-xs">编辑</a>
+                <!-- 因为编辑页面需要根据id渲染页面,而且发生页面的跳转,所以不能把id存在属性中,需要存在跳转的链接中 -->
+                <!-- <a href="article_edit.html" data-id="{{v.id}}" class="btn btn-default btn-xs">编辑</a> -->
                 <a href="javascript:void(0);" data-id="{{v.id}}" class="btn btn-danger btn-xs delete">删除</a>
             </td>
         </tr>
@@ -194,15 +196,17 @@
                             if (backData.data.data.length != 0 && callback != null) {
 
                                 callback(backData);
+                                $('#pagination-demo').show();
                                 $('#pagination-demo').prev().hide();
+                            } else if (backData.data.data.length == 0 && mypage == 1) {//没有数据
+                                $('#pagination-demo').hide();
+                                $('#pagination-demo').prev().show();
                             } else if (backData.data.totalPage == mypage - 1 && backData.data.data.length == 0) {
                                 //删完最后一页所有数据后,跳转到前面一页
                                 mypage -= 1;
                                 //调用changeTotalPages 这个方法 根据新的总页数 重新生成分页结构. 
                                 $('#pagination-demo').twbsPagination('changeTotalPages',
                                     backData.data.totalPage, mypage);
-                            }  else if (backData.data.data.length == 0) {//没有数据
-                                $('#pagination-demo').prev().show();
                             } 
                         }
                     }
