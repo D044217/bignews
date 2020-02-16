@@ -207,7 +207,7 @@
                                 //调用changeTotalPages 这个方法 根据新的总页数 重新生成分页结构. 
                                 $('#pagination-demo').twbsPagination('changeTotalPages',
                                     backData.data.totalPage, mypage);
-                            } 
+                            }
                         }
                     }
                 })
@@ -266,6 +266,15 @@
                     })
                 }
             })
+            //4.发表文章设置父窗口 发表文章高亮
+            //$() jq选择器的第二个参数其实是document文档，
+            //一般不写默认就是当前页面的document。如果希望找到父window的元素，则可以添加第二个参数
+            $('#release_btn').click(function () {
+                //$() :第一个参数：选择器  第二个参数：document，默认是当前窗口document
+                $('.level02>li:eq(1)', window.parent.document).addClass('active')
+                    .siblings()
+                    .removeClass('active');
+            });
         })
 
 
