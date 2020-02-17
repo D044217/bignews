@@ -227,6 +227,171 @@
     </div>
     <!-- 导包template -->
     <script src="./js/template-web.js"></script>
+    <!-- 1.模板字符串 -->
+    <script id="list_temp" type="text/html">
+        <div class="list_title">
+            <h3>{{data.data[0].category}}</h3>
+        </div>
+        {{each data.data v}}
+        <div class="common_news_list">
+            <a href="./article.html?id={{v.id}}" class="list_pic"><img src="{{v.cover}}" alt=""></a>
+            <h4><a href="./article.html?id={{v.id}}">{{v.title}}</a></h4>
+            <p>{{@ v.intro}}
+            </p>
+            <div class="new_info">
+                <span>标签：{{v.category}}&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<i class="fa fa-eye"></i>&nbsp;阅读(
+                    {{v.read}}
+                    )&nbsp;&nbsp;&nbsp;<i class="fa fa-commenting"></i>&nbsp;评论( {{v.comments}} )</span>
+                <b>发布于 {{v.date}}</b>
+            </div>
+        </div>
+        {{/each}}
+    </script>
+    <!-- 3.最新评论 -->
+    <script id="comment_temp" type="text/html">
+        {{each data v}}
+        <li>
+            <span>{{v.author.substr(0,1)}}</span>
+            <b><em>{{v.author}}</em> {{v.date}}说:</b>
+            <strong>{{v.intro}}</strong>
+        </li>
+        {{/each}}
+    </script>
+
+    <!-- 5.焦点关注 -->
+    <script id="article_temp" type="text/html">
+        {{each data v}}
+        <li><a href="./article.html?id={{v.id}}">{{v.intro}}</a></li>
+        {{/each}}
+    </script>
+
+    <!-- 6.文章类别 -->
+    <script id="category_temp" type="text/html">
+        {{each data v}}
+         <li><a href="./list.html?id={{v.id}}">{{v.name}}</a></li>
+        {{/each}}
+    </script>
+    <script>
+        $(function () {
+
+            // 1.搜索框点击事件
+            $('.search_btn').on('click', function () {
+                var searchWord = $('.search_txt').val().trim()
+                //非空判断
+                if (searchWord == '') {
+                    alert('请输入搜索关键词~~~~~')
+                    return
+                } else {
+                    window.location.href = "./list.html?searchTxt="+searchWord;
+                }
+            })
+
+            //文本输入框设置键盘按下事件:回车
+            $('.search_txt').on('keydown',function(e){
+                if(e.keyCode == 13){
+                    $('.search_btn').click();
+                }
+            })
+            //2.根据文章类别或者搜索词渲染文章列表
+            var value1 = window.location.search.split('=')[0]
+            var value2 = window.location.search.split('=')[1]
+            // console.log(value1);
+            
+            if(value1==''){
+                //通过在地址栏直接进入
+                window.location.href='./index.html'
+            }else if(value1=='?id'){
+                //通过点击文章类别进入的
+                $.ajax({
+                    url:'http://localhost:8080/api/v1/index/search',
+                    data:{
+                        type:value2
+                    },
+                    success:function(backData){
+                        console.log(backData);
+                        if(backData.code==200){
+                            if(backData.data.data.length==0){
+                                $('.left_con').html('没有数据');
+                                return
+                            }
+                            var res = template('list_temp',backData);
+                            $('.left_con').html(res);
+                        }
+                    }
+                })
+            }else if(value1=='?searchTxt'){
+                //通过关键词进入的
+                value2 = decodeURI(value2); //urlencode解码
+                $.ajax({
+                    url:'http://localhost:8080/api/v1/index/search',
+                    data:{
+                        key:value2
+                    },
+                    success:function(backData){
+                        console.log(backData);
+                        if(backData.code==200){
+                            if(backData.data.data.length==0){
+                                $('.left_con').html('没有数据');
+                                return
+                            }
+                            var res = template('list_temp',backData);
+                            $('.left_con').html(res);
+                            $('.list_title>h3').text('搜索词:'+value2)
+                        }
+                    }
+                })
+                
+            }
+            
+            //3.一周热门排行
+            $.ajax({
+                url: 'http://localhost:8080/api/v1/index/rank',
+                success: function (backData) {
+                    // console.log(backData);
+                    if (backData.code == 200) {
+                        for (var i = 0; i < backData.data.length; i++) {
+                            $('.content_list>li').eq(i).children('a').text(backData.data[i].title);
+                            $('.content_list>li').eq(i).children('a').attr('href',
+                                './article.html?id=' + backData.data[i].id);
+                        }
+                    }
+                }
+            })
+            //4.最新评论
+
+            $.ajax({
+                url: 'http://localhost:8080/api/v1/index/latest_comment',
+                success: function (backData) {
+                    // console.log(backData);
+                    if (backData.code == 200) {
+                        $('.comment_list').html(template('comment_temp', backData));
+                    }
+                }
+            })
+
+            //5.焦点关注
+            $.ajax({
+                url: 'http://localhost:8080/api/v1/index/attention',
+                success: function (backData) {
+                    // console.log(backData);
+                    if (backData.code == 200) {
+                        $('.guanzhu_list').html(template('article_temp', backData));
+                    }
+                }
+            })
+            //6.全部分类
+            $.ajax({
+                url: 'http://localhost:8080/api/v1/index/category',
+                success: function (backData) {
+                    // console.log(backData);
+                    if (backData.code == 200) {
+                        $('.level_two').html('<li class="up"></li>' + template('category_temp', backData));
+                        $('.left_menu').html(template('category_temp', backData));
+                    }
+                }
+            })
+        })
+    </script>
 </body>
 
 </html>
